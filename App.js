@@ -34,7 +34,8 @@ export default class App extends Component {
     super(props);
     this.state = {
       biometricsSupported:0,
-      biometricArray:""
+      biometricArray:"",
+      acceptedBiometric:false
     }
   }
 
@@ -58,6 +59,39 @@ export default class App extends Component {
       }
       this.setState({biometricsSupported:val},()=>console.log(this.state.biometricsSupported))
     })
+    ReactNativeBiometrics.createKeys('Confirm fingerprint')
+    .then((resultObject) => {
+      const { publicKey } = resultObject
+      console.log("publicKey",publicKey)
+      this.setState({biometricArray:publicKey});
+      console.log("publicKey",publicKey == this.state.biometricArray)
+
+    })
+  }
+
+  createBiometric(){
+    let epochTimeSeconds = Math.round((new Date()).getTime() / 1000).toString()
+    let payload = epochTimeSeconds + 'some message'
+     
+    ReactNativeBiometrics.createSignature({
+      promptMessage: 'Sign in',
+      payload: payload
+    })
+    .then((resultObject) => {
+      const { success, signature } = resultObject
+    
+      if (success) {
+        console.log(signature)
+        console.log(this.state.biometricArray)
+        this.setState({acceptedBiometric:true});
+        if(signature == this.state.biometricArray){
+          console.log("firma aceptada");
+        }else{
+          console.log("firma no aceptada",signature == this.state.biometricArray);
+
+        }
+      }
+    })
   }
 
   biometrics(){
@@ -65,6 +99,9 @@ export default class App extends Component {
       console.log("biom exists",this.state.biometricArray);
     }else{
       console.log("biom no exists");
+      if(this.state.biometricsSupported == 1 || this.state.biometricsSupported == 3){
+        
+      }
     }
   }
   
@@ -72,15 +109,18 @@ export default class App extends Component {
     return (
       <SafeAreaView style={{backgroundColor: Colors.darker}}>
         <StatusBar barStyle={'dark-content'} />
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={{backgroundColor: Colors.darker}}>
           <Header />
-          <View
-            style={{ padding:20, paddingTop:100}}>
-            <Button onPress={()=>this.biometrics()} title="Click here"/>
+          {this.state.acceptedBiometric ? 
+            <View
+            style={{ padding:20, paddingTop:100,backgroundColor: Colors.darker}}>
+            <Text style={{color:"#FFF"}}>Entraste!</Text>
           </View>
-        </ScrollView>
+          : 
+            <View
+              style={{ padding:20, paddingTop:100,backgroundColor: Colors.darker}}>
+              <Button onPress={()=>this.createBiometric()} title="Login"  color="#841584"/>
+            </View>
+          }
       </SafeAreaView>
     );
   };
